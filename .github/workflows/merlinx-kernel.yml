@@ -1,0 +1,73 @@
+name: Build merlinx kernel
+
+on:
+  push:
+    branches:
+      - lineage-24.0
+  pull_request:
+    branches:
+      - lineage-24.0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: merlinx-kernel-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential clang-14 flex \
+            libelf-dev libssl-dev lld-14 llvm-14 python3 rsync \
+            gcc-aarch64-linux-gnu
+          echo "/usr/lib/llvm-14/bin" >> "$GITHUB_PATH"
+
+      - name: Configure merlinx
+        run: |
+          make O=out ARCH=arm64 vendor/mt6768_defconfig
+          scripts/kconfig/merge_config.sh -m -O out out/.config \
+            arch/arm64/configs/vendor/merlin.config
+          make O=out ARCH=arm64 olddefconfig
+          grep -q '^CONFIG_TARGET_PRODUCT_MERLIN=y$' out/.config
+          for config in SYSCTL SYSVIPC POSIX_MQUEUE NAMESPACES PID_NS UTS_NS \
+            IPC_NS USER_NS SECCOMP SECCOMP_FILTER CGROUPS CGROUP_DEVICE \
+            CGROUP_SCHED FAIR_GROUP_SCHED CGROUP_FREEZER CGROUP_NET_PRIO \
+            MEMCG CFS_BANDWIDTH CGROUP_PIDS CGROUP_CPUACCT DEVTMPFS \
+            OVERLAY_FS TMPFS_POSIX_ACL TMPFS_XATTR FW_LOADER \
+            FW_LOADER_USER_HELPER NET_NS VETH BRIDGE NETFILTER \
+            BRIDGE_NETFILTER NETFILTER_ADVANCED NF_CONNTRACK NF_CT_NETLINK \
+            IP_NF_IPTABLES IP_NF_FILTER NF_NAT NF_TABLES \
+            IP_NF_TARGET_MASQUERADE NETFILTER_XT_TARGET_TCPMSS \
+            NETFILTER_XT_MATCH_ADDRTYPE NF_NAT_REDIRECT IP_ADVANCED_ROUTER \
+            IP_MULTIPLE_TABLES IPV6 IPV6_MULTIPLE_TABLES IP6_NF_IPTABLES \
+            IP6_NF_FILTER IP6_NF_MANGLE IP6_NF_NAT \
+            IP6_NF_TARGET_MASQUERADE NF_NAT_IPV6; do
+            grep -q "^CONFIG_${config}=y$" out/.config || {
+              echo "Required Droidspaces option CONFIG_${config} is not enabled"
+              exit 1
+            }
+          done
+
+      - name: Build kernel and device trees
+        run: |
+          make O=out ARCH=arm64 CC=clang-14 LD=ld.lld-14 LLVM=1 LLVM_IAS=1 \
+            CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs -j"$(nproc)"
+
+      - name: Upload kernel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: merlinx-kernel-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            out/arch/arm64/boot/Image.gz
+            out/arch/arm64/boot/dts/mediatek/**/*.dtb*
+            out/.config
