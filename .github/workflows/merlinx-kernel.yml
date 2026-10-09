@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: merlinx-kernel-${{ github.ref }}
@@ -28,7 +28,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bc bison build-essential clang-14 flex \
             libelf-dev libssl-dev lld-14 llvm-14 python3 rsync \
-            gcc-aarch64-linux-gnu
+            gcc-aarch64-linux-gnu zip
           echo "/usr/lib/llvm-14/bin" >> "$GITHUB_PATH"
 
       - name: Configure merlinx
@@ -62,12 +62,44 @@ jobs:
           make O=out ARCH=arm64 CC=clang-14 LD=ld.lld-14 LLVM=1 LLVM_IAS=1 \
             CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs -j"$(nproc)"
 
-      - name: Upload kernel artifacts
+      - name: Package kernel release
+        id: release_meta
+        run: |
+          set -euo pipefail
+          image=out/arch/arm64/boot/Image.gz
+          release_name="$(date -u +'%Y%m%d%H%M')-$(sha256sum "$image" | cut -c1-6)"
+          package_dir=release-package
+          mkdir -p "$package_dir/dtbs"
+          cp "$image" "$package_dir/"
+          cp out/.config "$package_dir/"
+          (cd out/arch/arm64/boot/dts && find mediatek -type f \
+            \( -name '*.dtb' -o -name '*.dtbo' \) \
+            -exec cp --parents {} "$GITHUB_WORKSPACE/$package_dir/dtbs/" \;)
+          test -n "$(find "$package_dir/dtbs" -type f -print -quit)"
+          (cd "$package_dir" && find . -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          asset="merlinx-droidspaces-${release_name}.zip"
+          zip -qr "$asset" "$package_dir"
+          echo "release_name=$release_name" >> "$GITHUB_OUTPUT"
+          echo "asset=$asset" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: merlinx-kernel-${{ github.sha }}
+          name: ${{ steps.release_meta.outputs.release_name }}
           if-no-files-found: error
-          path: |
-            out/arch/arm64/boot/Image.gz
-            out/arch/arm64/boot/dts/mediatek/**/*.dtb*
-            out/.config
+          path: ${{ steps.release_meta.outputs.asset }}
+
+      - name: Publish GitHub Release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.release_name }}
+          name: ${{ steps.release_meta.outputs.release_name }}
+          body: |
+            Droidspaces-enabled merlinx kernel build.
+
+            Commit: `${{ github.sha }}`
+            Asset naming: UTC build time (minute precision) plus the first 6 characters of the kernel image SHA-256.
+          files: ${{ steps.release_meta.outputs.asset }}
+          fail_on_unmatched_files: true
