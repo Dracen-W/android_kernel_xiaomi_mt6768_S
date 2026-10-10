@@ -38,6 +38,8 @@ jobs:
             arch/arm64/configs/vendor/merlin.config
           make O=out ARCH=arm64 olddefconfig
           grep -q '^CONFIG_TARGET_PRODUCT_MERLIN=y$' out/.config
+          grep -q '^CONFIG_MTK_GPU_VERSION="mali bifrost r49p1"$' out/.config
+          grep -q '^# CONFIG_MTK_GPU_MFG_COUNTER is not set$' out/.config
           for config in SYSCTL SYSVIPC POSIX_MQUEUE NAMESPACES PID_NS UTS_NS \
             IPC_NS USER_NS SECCOMP SECCOMP_FILTER CGROUPS CGROUP_DEVICE \
             CGROUP_SCHED FAIR_GROUP_SCHED CGROUP_FREEZER CGROUP_NET_PRIO \
@@ -58,20 +60,85 @@ jobs:
           done
 
       - name: Build kernel and device trees
+        id: kernel_build
         run: |
+          set -o pipefail
           make O=out ARCH=arm64 CC=clang-14 LD=ld.lld-14 LLVM=1 LLVM_IAS=1 \
-            CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs -j"$(nproc)"
+            CROSS_COMPILE=aarch64-linux-gnu- Image.gz dtbs -j"$(nproc)" \
+            2>&1 | tee out/kernel-build.log
+
+      - name: Post-build smoke diagnostics
+        id: postcheck
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          diagnostics="$RUNNER_TEMP/r49-post-build-diagnostics.txt"
+          failures=0
+          : > "$diagnostics"
+
+          check() {
+            description=$1
+            shift
+            if "$@"; then
+              printf 'PASS: %s\n' "$description" | tee -a "$diagnostics"
+            else
+              printf 'FAIL: %s\n' "$description" | tee -a "$diagnostics"
+              failures=$((failures + 1))
+            fi
+          }
+
+          check 'kernel Image.gz exists' test -s out/arch/arm64/boot/Image.gz
+          check 'kernel Image.gz passes gzip integrity check' \
+            gzip -t out/arch/arm64/boot/Image.gz
+          check 'resolved configuration selects Mali Bifrost r49p1' \
+            grep -Fxq 'CONFIG_MTK_GPU_VERSION="mali bifrost r49p1"' out/.config
+          check 'legacy Gator MFG counter is disabled for r49p1' \
+            grep -Fxq '# CONFIG_MTK_GPU_MFG_COUNTER is not set' out/.config
+          check 'merlin product config is enabled' \
+            grep -Fxq 'CONFIG_TARGET_PRODUCT_MERLIN=y' out/.config
+          check 'Droidspaces namespace support is enabled' \
+            grep -Fxq 'CONFIG_NAMESPACES=y' out/.config
+          check 'Droidspaces seccomp filter is enabled' \
+            grep -Fxq 'CONFIG_SECCOMP_FILTER=y' out/.config
+          if find out/arch/arm64/boot/dts/mediatek -type f \
+            \( -name 'merlin.dtb' -o -name 'merlin*.dtbo' \) \
+            -print -quit | grep -q .; then
+            printf 'PASS: merlin device tree artifact exists\n' | tee -a "$diagnostics"
+          else
+            printf 'FAIL: merlin device tree artifact is missing\n' | tee -a "$diagnostics"
+            failures=$((failures + 1))
+          fi
+
+          if [[ "$failures" -eq 0 ]]; then
+            printf '\nResult: PASS\n' | tee -a "$diagnostics"
+          else
+            printf '\nResult: FAIL (%s check(s))\n' "$failures" | tee -a "$diagnostics"
+          fi
+          {
+            echo 'summary<<POST_BUILD_SUMMARY'
+            cat "$diagnostics"
+            echo 'POST_BUILD_SUMMARY'
+          } >> "$GITHUB_OUTPUT"
+          echo "diagnostics_file=$diagnostics" >> "$GITHUB_OUTPUT"
+          [[ "$failures" -eq 0 ]]
 
       - name: Package kernel release
         id: release_meta
+        env:
+          POSTCHECK_OUTCOME: ${{ steps.postcheck.outcome }}
         run: |
           set -euo pipefail
           image=out/arch/arm64/boot/Image.gz
-          release_name="$(date -u +'%Y%m%d%H%M')-$(sha256sum "$image" | cut -c1-6)"
+          diagnostic_suffix=''
+          if [[ "$POSTCHECK_OUTCOME" == failure ]]; then
+            diagnostic_suffix='-❌'
+          fi
+          release_name="$(date -u +'%Y%m%d%H%M')-$(sha256sum "$image" | cut -c1-6)-r49p1${diagnostic_suffix}"
           package_dir=release-package
           mkdir -p "$package_dir/dtbs"
           cp "$image" "$package_dir/"
           cp out/.config "$package_dir/"
+          cp "$RUNNER_TEMP/r49-post-build-diagnostics.txt" "$package_dir/"
           (cd out/arch/arm64/boot/dts && find mediatek -type f \
             \( -name '*.dtb' -o -name '*.dtbo' \) \
             -exec cp --parents {} "$GITHUB_WORKSPACE/$package_dir/dtbs/" \;)
@@ -97,9 +164,21 @@ jobs:
           tag_name: ${{ steps.release_meta.outputs.release_name }}
           name: ${{ steps.release_meta.outputs.release_name }}
           body: |
-            Droidspaces-enabled merlinx kernel build.
+            Droidspaces-enabled merlinx kernel build using Mali Bifrost r49p1.
 
             Commit: `${{ github.sha }}`
-            Asset naming: UTC build time (minute precision) plus the first 6 characters of the kernel image SHA-256.
+            Asset naming: UTC build time (minute precision), first 6 characters of the kernel image SHA-256, and `r49p1`.
+            Post-build artifact smoke checks: `${{ steps.postcheck.outcome }}`
+            A trailing red cross means one or more post-build checks failed; the build artifacts are still published for diagnosis. These checks do not replace on-device testing.
+
+            ${{ steps.postcheck.outputs.summary }}
           files: ${{ steps.release_meta.outputs.asset }}
           fail_on_unmatched_files: true
+
+      - name: Upload compiler log if build fails
+        if: failure() && steps.kernel_build.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: merlinx-r49p1-build-failure-${{ github.sha }}
+          if-no-files-found: warn
+          path: out/kernel-build.log

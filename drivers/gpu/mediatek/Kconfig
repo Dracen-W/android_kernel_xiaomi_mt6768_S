@@ -25,6 +25,14 @@ config MTK_GPU_COMMON_DVFS_SUPPORT
 	  It is nice method to save power
 	  It is recommended to enable it when MTK_GPU_SUPPORT is enabled
 
+config MTK_GPU_MFG_COUNTER
+	bool "Support MTK GPU hardware counter integration"
+	depends on MTK_GPU_SUPPORT
+	default y
+	help
+	  Enable MediaTek's legacy Mali Gator hardware counter integration.
+	  This interface is not available in Mali Bifrost r49p1.
+
 config SW_SYNC64
 	bool "Enable SW 64bit sync counter"
 	depends on SW_SYNC
