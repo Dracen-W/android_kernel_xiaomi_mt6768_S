@@ -27,6 +27,7 @@ $(info mtk-Kbuild CONFIG_MALI_PLATFORM_THIRDPARTY := $(CONFIG_MALI_PLATFORM_THIR
 $(info mtk-Kbuild CONFIG_MALI_PLATFORM_THIRDPARTY_NAME := $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME))
 
 CONFIG_MALI_DEBUG := n
+ccflags-y += -DCONFIG_MALI_REAL_HW
 ccflags-y += -DMALI_KBASE_R49P1
 
 # This vendor 4.19 kernel backports the mmap_lock field from mainline 5.8.
