@@ -12,6 +12,7 @@
 #include <mali_kbase.h>
 #include <mali_kbase_defs.h>
 #include <mali_kbase_config.h>
+#include <backend/gpu/mali_kbase_pm_internal.h>
 #include "mali_kbase_cpu_mt6768.h"
 #include "mali_kbase_config_platform.h"
 #include "platform/mtk_platform_common.h"
@@ -25,6 +26,14 @@
 #define mali_pr_debug(fmt, args...)		pr_debug(MALI_TAG"[DEBUG]"fmt, ##args)
 
 DEFINE_MUTEX(g_mfg_lock);
+
+#ifdef CONFIG_MALI_MIDGARD_DVFS
+int kbase_platform_dvfs_event(struct kbase_device *kbdev, u32 utilisation,
+			      u32 util_gl_share, u32 util_cl_share[2])
+{
+	return 1;
+}
+#endif
 
 static void *g_MFG_base;
 static int g_curFreqID;

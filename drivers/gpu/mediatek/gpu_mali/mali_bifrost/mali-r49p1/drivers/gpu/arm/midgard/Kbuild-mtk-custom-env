@@ -4,6 +4,10 @@ MTK_TOP = $(srctree)/drivers/misc/mediatek/
 
 # build support for a ARM Mali Midgard GPU
 CONFIG_MALI_MIDGARD := y
+CONFIG_MALI_REAL_HW := y
+CONFIG_MALI_NO_MALI := n
+CONFIG_MALI_MIDGARD_DVFS := y
+CONFIG_MALI_DEVFREQ := n
 
 # use mtk platform
 CONFIG_MALI_PLATFORM_THIRDPARTY := y
