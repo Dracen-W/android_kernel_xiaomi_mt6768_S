@@ -5792,6 +5792,21 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 #endif /* IS_ENABLED(CONFIG_REGULATOR) */
 
 	dev_set_drvdata(kbdev->dev, kbdev);
+
+	/* MTK: begin. Must run before kbase_device_init(), which powers the GPU. */
+#if defined(CONFIG_MACH_MT6768) || defined(CONFIG_MACH_MT6785)
+	err = mtk_common_device_init(kbdev);
+	if (!err)
+		err = mtk_platform_device_init(kbdev);
+	if (err) {
+		dev_err(kbdev->dev, "MTK platform init failed: %d\n", err);
+		dev_set_drvdata(kbdev->dev, NULL);
+		kbase_device_free(kbdev);
+		return err;
+	}
+#endif
+	/* MTK: end */
+
 #if (KERNEL_VERSION(5, 3, 0) <= LINUX_VERSION_CODE)
 	mutex_lock(&kbase_probe_mutex);
 #endif
@@ -5816,6 +5831,12 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		 */
 		dev_info(kbdev->dev, KBASE_COMPILED_MMAP_MIN_ADDR_MSG);
 #endif
+
+		/* MTK: begin */
+#if IS_ENABLED(CONFIG_PROC_FS)
+		mtk_common_procfs_init();
+#endif
+		/* MTK: end */
 
 		dev_info(kbdev->dev, "Probed as %s\n", dev_name(kbdev->mdev.this_device));
 		if (PAGE_SHIFT != 12)
