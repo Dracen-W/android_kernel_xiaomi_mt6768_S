@@ -296,6 +296,10 @@ void kbase_device_term(struct kbase_device *kbdev)
 	kbase_mem_halt(kbdev);
 }
 
+static int bisect_stage = 999;
+module_param(bisect_stage, int, 0444);
+MODULE_PARM_DESC(bisect_stage, "debug: force failure before this dev_init stage");
+
 int kbase_device_init(struct kbase_device *kbdev)
 {
 	int err = 0;
@@ -307,6 +311,12 @@ int kbase_device_init(struct kbase_device *kbdev)
 	kbase_disjoint_init(kbdev);
 
 	for (i = 0; i < ARRAY_SIZE(dev_init); i++) {
+		if (i >= bisect_stage) {
+			dev_info(kbdev->dev, "kbase bisect: stopping before stage %u", i);
+			err = -ENODEV;
+			kbase_device_term_partial(kbdev, i);
+			break;
+		}
 		if (dev_init[i].init) {
 			err = dev_init[i].init(kbdev);
 			if (err) {
