@@ -120,6 +120,8 @@
 #include <context/mali_kbase_context.h>
 
 #include <mali_kbase_caps.h>
+#include "platform/mtk_platform_common.h"
+#include <mtk_gpufreq.h>
 
 #define KERNEL_SIDE_DDK_VERSION_STRING "K:" MALI_RELEASE_NAME "(GPL)"
 
