@@ -1351,9 +1351,24 @@ config DEBUG_BUGVERBOSE
 	  of the BUG call as well as the EIP and oops trace.  This aids
 	  debugging but costs about 70-100K of memory.
 
+config LIST_HARDENED
+	bool "Enable list hardening feature"
+	depends on BUG_ON_DATA_CORRUPTION || DEBUG_LIST
+	help
+	  Enable the list hardening feature: perform integrity checks on
+	  linked list manipulations to catch common corruption such as
+	  adding or deleting entries that are not on a list. Compared to
+	  DEBUG_LIST this uses a cheap inlined fast path with a reduced
+	  check set and only calls into a reporting slow path on detected
+	  corruption, which makes it suitable for production kernels.
+	  Combine with BUG_ON_DATA_CORRUPTION to BUG() instead of WARN().
+
+	  If unsure, say N.
+
 config DEBUG_LIST
 	bool "Debug linked list manipulation"
 	depends on DEBUG_KERNEL || BUG_ON_DATA_CORRUPTION
+	select LIST_HARDENED
 	help
 	  Enable this to turn on extended checks in the linked-list
 	  walking routines.
