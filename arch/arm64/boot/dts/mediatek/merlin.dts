@@ -251,7 +251,7 @@
 &spi5 {
 	#address-cells = <1>;
 	#size-cells = <0>;
-	p61@31 {
+	p61@0 {
 		compatible = "nxp,p61";
 		reg = <0>;
 		spi-max-frequency = <8000000>;
