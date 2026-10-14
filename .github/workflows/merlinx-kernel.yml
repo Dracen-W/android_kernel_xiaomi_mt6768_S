@@ -33,10 +33,12 @@ jobs:
 
       - name: Configure merlinx
         run: |
-          make O=out ARCH=arm64 vendor/mt6768_defconfig
+          make O=out ARCH=arm64 CC=clang-14 LD=ld.lld-14 LLVM=1 LLVM_IAS=1 \
+            vendor/mt6768_defconfig
           scripts/kconfig/merge_config.sh -m -O out out/.config \
             arch/arm64/configs/vendor/merlin.config
-          make O=out ARCH=arm64 olddefconfig
+          make O=out ARCH=arm64 CC=clang-14 LD=ld.lld-14 LLVM=1 LLVM_IAS=1 \
+            olddefconfig
           grep -q '^CONFIG_TARGET_PRODUCT_MERLIN=y$' out/.config
           grep -q '^CONFIG_MTK_GPU_VERSION="mali bifrost r49p1"$' out/.config
           grep -q '^# CONFIG_MTK_GPU_MFG_COUNTER is not set$' out/.config
