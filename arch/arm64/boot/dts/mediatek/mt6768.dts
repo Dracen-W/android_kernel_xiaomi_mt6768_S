@@ -718,6 +718,7 @@ page_owner=on loop.max_part=7";
 	gpio: gpio@10005000 {
 		compatible = "mediatek,gpio", "syscon";
 		reg = <0 0x10005000 0 0x1000>;
+		#gpio-cells = <1>;
 	};
 
 	pio: pinctrl {
