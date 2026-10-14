@@ -313,12 +313,12 @@ static int mt_charger_get_property(struct power_supply *psy,
 			val->intval = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 			pr_info("%s: Charger Type: CHARGER_UNKNOWN\n", __func__);
 			break;
-		case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
-			val->intval = call_mode;
-			break;
 		default:
 			break;
 		}
+		break;
+	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
+		val->intval = call_mode;
 		break;
 	default:
 		return -EINVAL;
