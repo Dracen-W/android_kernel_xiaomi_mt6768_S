@@ -229,6 +229,8 @@
 };
 /* TOUCH end */
 &i2c3 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	status = "okay";
 	nxp@28 {
 		compatible = "nq-nci";
@@ -353,6 +355,8 @@
 /* add goodix fingerprint end*/
 
 &i2c7 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	fusb303@21 {
 		status = "ok";
 		compatible = "on,fusb303";
@@ -371,6 +375,8 @@
 
 
 &i2c7 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	smb1351-charger@55 {
 		compatible = "qcom,smb1351_charger";
 		reg = <0x55>;
@@ -482,6 +488,8 @@
 
 
 &i2c2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	clock-frequency = <400000>;
 
 	mtk-usb@60 {
@@ -492,6 +500,8 @@
 };
 
 &i2c0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	lm3697@36 {
 		compatible = "ti,lm3697";
 		reg = <0x36>;
@@ -675,6 +685,8 @@
 };
 
 &spi3 {
+	#address-cells = <1>;
+	#size-cells = <0>;
     status = "okay";
     smart_pa:cs35l41@0 {
 	       compatible = "cirrus,cs35l41";
@@ -695,6 +707,8 @@
 };
 
 &spi0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	status = "ok";
 
 
