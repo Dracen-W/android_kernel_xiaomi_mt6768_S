@@ -448,16 +448,19 @@ regular_page:
 	return 0;
 }
 
-static const struct mm_walk_ops cold_walk_ops = {
-	.pmd_entry = madvise_cold_pte_range,
-};
-
 static void madvise_cold_page_range(struct mmu_gather *tlb,
 			     struct vm_area_struct *vma,
 			     unsigned long addr, unsigned long end)
 {
+	struct mm_walk cold_walk = {
+		.pmd_entry = madvise_cold_pte_range,
+		.mm = vma->vm_mm,
+		.vma = vma,
+		.private = tlb,
+	};
+
 	tlb_start_vma(tlb, vma);
-	walk_page_range(vma->vm_mm, addr, end, &cold_walk_ops, NULL);
+	walk_page_range(addr, end, &cold_walk);
 	tlb_end_vma(tlb, vma);
 }
 
@@ -536,7 +539,7 @@ static int madvise_pageout_pte_range(pmd_t *pmd, unsigned long addr,
 			orig_pmd = pmd_mkold(orig_pmd);
 
 			set_pmd_at(mm, addr, pmd, orig_pmd);
-			tlb_remove_tlb_entry(tlb, pmd, addr);
+			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
 		}
 
 		ClearPageReferenced(page);
@@ -622,8 +625,15 @@ static void madvise_pageout_page_range(struct mmu_gather *tlb,
 			     struct vm_area_struct *vma,
 			     unsigned long addr, unsigned long end)
 {
+	struct mm_walk pageout_walk = {
+		.pmd_entry = madvise_pageout_pte_range,
+		.mm = vma->vm_mm,
+		.vma = vma,
+		.private = tlb,
+	};
+
 	tlb_start_vma(tlb, vma);
-	walk_page_range(vma->vm_mm, addr, end, &cold_walk_ops, NULL);
+	walk_page_range(addr, end, &pageout_walk);
 	tlb_end_vma(tlb, vma);
 }
 
