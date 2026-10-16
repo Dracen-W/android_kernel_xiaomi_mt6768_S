@@ -8,12 +8,14 @@
 
 ## 基线
 
-基于 Android Common Kernel (ACK) **android-4.19-stable r49p1**（Xiaomi S 分支）。
-本分支 backport 了一批安全、存储与内存管理特性，并将内核态 GPU DDK 驱动适配到 **r49p1**。
+基于 [mt6768-dev/android_kernel_xiaomi_mt6768](https://github.com/mt6768-dev/android_kernel_xiaomi_mt6768)。
+本分支加入了完整的 **DroidSpaces** 支持，移植了 **r49p1** GPU DDK，并
+backport 了一批安全、存储与内存管理特性（详见
+[内核 DDK 驱动适配到 r49p1](#内核-ddk-驱动适配到-r49p1)）。
 
 ## Backport 特性
 
-### 批次一：安全加固
+### 安全 backport
 
 | 特性 | 作用 |
 |------|------|
@@ -22,7 +24,7 @@
 | **BPF 加固** | eBPF 指针检查与 helper 校验 |
 | **CI / clang 构建** | clang-14 + LTO 构建流程 |
 
-### 批次二：存储
+### 存储 backport
 
 | 特性 | 作用 |
 |------|------|
@@ -30,7 +32,7 @@
 | **f2fs** | 周期性检查点间隔 60s → 300s（减少 eMMC 写入停顿） |
 | **EROFS** | system/vendor 只读压缩文件系统（更省空间、开机更快） |
 
-### 批次三：内存管理
+### 内存管理 backport
 
 | 特性 | 作用 |
 |------|------|

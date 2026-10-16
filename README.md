@@ -11,13 +11,14 @@
 
 ## Base
 
-Based on Android Common Kernel (ACK) **android-4.19-stable r49p1** (Xiaomi S branch).
-This branch backports a set of security, storage, and memory-management features,
-and adapts the in-kernel GPU DDK drivers to **r49p1**.
+Based on [mt6768-dev/android_kernel_xiaomi_mt6768](https://github.com/mt6768-dev/android_kernel_xiaomi_mt6768).
+This branch adds full **DroidSpaces** support, ports the **r49p1** GPU DDK,
+and backports a set of security, storage, and memory-management features
+(see [GPU DDK adaptation](#gpu-ddk-adaptation-to-r49p1)).
 
 ## Backported features
 
-### Batch 1 — Security hardening
+### Security backports
 
 | Feature | Purpose |
 |---------|---------|
@@ -26,7 +27,7 @@ and adapts the in-kernel GPU DDK drivers to **r49p1**.
 | **BPF hardening** | eBPF pointer checks and helper validation |
 | **CI / clang build** | clang-14 + LTO build pipeline |
 
-### Batch 2 — Storage
+### Storage backports
 
 | Feature | Purpose |
 |---------|---------|
@@ -34,7 +35,7 @@ and adapts the in-kernel GPU DDK drivers to **r49p1**.
 | **f2fs** | Periodic checkpoint interval 60 s → 300 s (fewer eMMC write stalls) |
 | **EROFS** | Read-only compressed filesystem for system/vendor (smaller, faster boot) |
 
-### Batch 3 — Memory management
+### Memory-management backports
 
 | Feature | Purpose |
 |---------|---------|
