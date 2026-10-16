@@ -44,18 +44,29 @@ and adapts the in-kernel GPU DDK drivers to **r49p1**.
 
 ## GPU DDK adaptation to r49p1
 
-The in-kernel GPU / multimedia DDK drivers are adapted to **r49p1** to pair with the
-userspace GPU driver.
+The r49p1 **Bifrost** driver source in this kernel comes from **ARM**; the
+adaptation to this tree was done by referencing the kernel's existing **r32**
+source. The resulting in-kernel DDK remains **backward compatible with the
+stock r32 vendor blob** — the kernel can be flashed standalone, with no
+vendor-side changes required.
 
 ### Vulkan 1.1 → 1.3.278
 
-Pair this kernel with the following repository to upgrade **Vulkan from 1.1 to 1.3.278**:
+To upgrade **Vulkan from 1.1 to 1.3.278**, use the following repository:
 
 > https://github.com/Dracen-W/r49p1_GPUDriverUpgrade_for_redmi_merlinx_mt6768_vendorS
 
-That repository provides the **vendor-side (userspace)** GPU driver upgrade; this
-repository provides the matching **kernel-side DDK interfaces**. Both must be
-flashed together.
+That repository provides the **vendor-side (userspace)** GPU driver blob as a
+**Magisk module**. The two components are **not flashed together**. Order
+matters:
+
+1. **Flash this kernel first** (works with the stock r32 vendor blob).
+2. **Then** install the driver blob module via **Magisk** to mount the upgraded
+   userspace driver.
+
+> **⚠️ Bootloop warning:** Installing the r49p1 driver module **before**
+> flashing this kernel will **bootloop**. Always flash the kernel first,
+> then install the Magisk module.
 
 Highlights of Vulkan 1.3.278 vs 1.1:
 

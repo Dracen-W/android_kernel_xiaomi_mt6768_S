@@ -40,16 +40,24 @@
 
 ## 内核 DDK 驱动适配到 r49p1
 
-内核态 GPU / 多媒体 DDK 驱动已适配到 **r49p1**，与用户态 GPU 驱动配套。
+本内核中的 r49p1 **Bifrost** 驱动源码来自 **ARM**，适配工作参考了内核中
+原有的 **r32** 源码完成。适配后的内核态 DDK **向下兼容原厂 r32 vendor
+blob** —— 内核可单独刷入，无需改动 vendor 分区。
 
 ### Vulkan 1.1 → 1.3.278
 
-搭配以下仓库将 **Vulkan 从 1.1 升级到 1.3.278**：
+升级 **Vulkan 从 1.1 到 1.3.278** 请使用以下仓库：
 
 > https://github.com/Dracen-W/r49p1_GPUDriverUpgrade_for_redmi_merlinx_mt6768_vendorS
 
-该仓库提供 **vendor 侧（用户态）** 的 GPU 驱动升级，本仓库提供对应的
-**内核态 DDK 接口**，两者需配套刷入。
+该仓库提供 **vendor 侧（用户态）** GPU 驱动 blob，形式为 **Magisk 模块**。
+两者**不需要一起刷入**，但**顺序很重要**：
+
+1. **先刷入本内核**（搭配原厂 r32 vendor blob 即可直接使用）。
+2. **再**通过 **Magisk** 安装驱动 blob 模块，挂载升级后的用户态驱动。
+
+> **⚠️ Bootloop 警告**：**先装 r49p1 驱动模块、后刷本内核**会直接
+> **bootloop**。务必先刷内核，再装 Magisk 模块。
 
 Vulkan 1.3.278 相对 1.1 的主要新特性：
 
