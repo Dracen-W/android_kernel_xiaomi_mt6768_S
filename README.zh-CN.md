@@ -84,4 +84,4 @@ CI 构建与测试通过本仓库的 GitHub Actions 运行。
 ## 参见
 
 - [English README](README.md)
-- [vendor 侧 GPU 驱动升级（Vulkan 1.3.278）](https://github.com/Dracen-W/r49p1_GPUDriverUpgrade_for_redmi_merlinx_mt6768_vendorS)
+- [vendor 侧 GPU 驱动升级（Vulkan 1.3.278）]([https://github.com/Dracen-W/r49p1_GPUDriverUpgrade_for_redmi_merlinx_mt6768_vendorS](https://github.com/Dracen-W/r49p1_GPUDriverUpgrade_for_redmi_merlinx_mt6768_vendorS/blob/main/README.zh-CN.md))
